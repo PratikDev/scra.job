@@ -3,9 +3,10 @@ import cors from "cors";
 import express from "express";
 import { Op } from "sequelize";
 import { Profile, ScrapedJob, TrackedJob, initDatabase } from "./database.js";
+import { ACCEPTED_JOB_SOURCE_HOSTS, isAcceptedJobSourceUrl } from "./acceptedJobSources.js";
 import { calculateMatchScore } from "./matchScore.js";
 import { REMOTE_LOCATION_PHRASES } from "./remoteFilter.js";
-import { scrapeAllSources } from "./scrapers.js";
+import { scrapeAllSources, scrapeJobFromUrl } from "./scrapers.js";
 
 fs.mkdirSync("data", { recursive: true });
 
@@ -96,6 +97,12 @@ app.get("/api/tracked-jobs", async (_request, response, next) => {
 app.post("/api/tracked-jobs", async (request, response, next) => {
 	try {
 		const payload = request.body ?? {};
+		if (!payload.url || !isAcceptedJobSourceUrl(payload.url)) {
+			response.status(400).json({
+				error: `Unsupported job source. Use a link from: ${ACCEPTED_JOB_SOURCE_HOSTS.join(", ")}.`,
+			});
+			return;
+		}
 		const job = await TrackedJob.create({
 			title: payload.title,
 			company: payload.company,
@@ -105,6 +112,45 @@ app.post("/api/tracked-jobs", async (request, response, next) => {
 			dateApplied: payload.dateApplied || null,
 			status: TRACKER_STATUSES.includes(payload.status) ? payload.status : "To Apply",
 			sourceJobId: payload.sourceJobId || null,
+		});
+		response.status(201).json(job);
+	} catch (error) {
+		next(error);
+	}
+});
+
+app.post("/api/tracked-jobs/from-url", async (request, response, next) => {
+	try {
+		const payload = request.body ?? {};
+		if (!payload.url || !isAcceptedJobSourceUrl(payload.url)) {
+			response.status(400).json({
+				error: `Unsupported job source. Use a link from: ${ACCEPTED_JOB_SOURCE_HOSTS.join(", ")}.`,
+			});
+			return;
+		}
+
+		const existingScrapedJob = await ScrapedJob.findOne({ where: { url: payload.url } });
+		let extractedJob = null;
+		try {
+			extractedJob = await scrapeJobFromUrl(payload.url);
+		} catch (error) {
+			if (!existingScrapedJob) throw error;
+			extractedJob = existingScrapedJob.toJSON();
+		}
+		if (!extractedJob?.title || !extractedJob?.company) {
+			response.status(422).json({ error: "Could not extract job details from this link." });
+			return;
+		}
+
+		const job = await TrackedJob.create({
+			title: extractedJob.title,
+			company: extractedJob.company,
+			salaryRange: extractedJob.salaryRange || null,
+			url: payload.url,
+			notes: payload.notes || `Imported from ${extractedJob.source}`,
+			dateApplied: payload.dateApplied || null,
+			status: TRACKER_STATUSES.includes(payload.status) ? payload.status : "To Apply",
+			sourceJobId: existingScrapedJob?.id ?? null,
 		});
 		response.status(201).json(job);
 	} catch (error) {

@@ -1,5 +1,6 @@
-import { PlusIcon, SaveIcon } from "lucide-react";
+import { Loader2Icon, PlusIcon, SaveIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -15,13 +16,18 @@ import { DarkTextarea } from "@/components/DarkTextarea";
 import { Field } from "@/components/Field";
 import { StatusSelect } from "@/components/StatusSelect";
 import { api } from "@/lib/api";
-import { STATUSES, type DraftJob, type Status, type TrackedJob } from "@/lib/types";
+import { acceptedJobSourceLabel, isAcceptedJobSourceUrl } from "@/lib/acceptedJobSources";
+import { STATUSES, type Status, type TrackedJob } from "@/lib/types";
 import { KanbanCard } from "./KanbanCard";
 
-const emptyDraft: DraftJob = {
-	title: "",
-	company: "",
-	salaryRange: "",
+type UrlImportDraft = {
+	url: string;
+	notes: string;
+	dateApplied: string;
+	status: Status;
+};
+
+const emptyDraft: UrlImportDraft = {
 	url: "",
 	notes: "",
 	dateApplied: "",
@@ -30,9 +36,10 @@ const emptyDraft: DraftJob = {
 
 export function TrackerView() {
 	const [dialogOpen, setDialogOpen] = useState(false);
-	const [draft, setDraft] = useState<DraftJob>(emptyDraft);
+	const [draft, setDraft] = useState<UrlImportDraft>(emptyDraft);
 	const [trackedJobs, setTrackedJobs] = useState<TrackedJob[]>([]);
 	const [error, setError] = useState("");
+	const [isImporting, setIsImporting] = useState(false);
 
 	useEffect(() => {
 		async function loadTrackedJobs() {
@@ -46,22 +53,37 @@ export function TrackerView() {
 		void loadTrackedJobs();
 	}, []);
 
-	async function addManualJob() {
-		if (!draft.title.trim() || !draft.company.trim()) {
-			setError("Job title and company are required");
+	async function importJobFromUrl() {
+		if (!draft.url.trim()) {
+			toast.error("Add a job link before saving.");
+			return;
+		}
+		if (!isAcceptedJobSourceUrl(draft.url)) {
+			toast.error("Unsupported job source", {
+				description: `Use a link from: ${acceptedJobSourceLabel()}.`,
+			});
 			return;
 		}
 
 		try {
-			const tracked = await api<TrackedJob>("/api/tracked-jobs", {
+			setError("");
+			setIsImporting(true);
+			const tracked = await api<TrackedJob>("/api/tracked-jobs/from-url", {
 				method: "POST",
 				body: JSON.stringify(draft),
 			});
 			setTrackedJobs((current) => [tracked, ...current]);
 			setDraft(emptyDraft);
 			setDialogOpen(false);
+			toast.success("Job imported to tracker", {
+				description: `${tracked.title} at ${tracked.company}`,
+			});
 		} catch (caught) {
-			setError(caught instanceof Error ? caught.message : "Could not add job");
+			const message = caught instanceof Error ? caught.message : "Could not import job";
+			setError(message);
+			toast.error("Could not import job", { description: message });
+		} finally {
+			setIsImporting(false);
 		}
 	}
 
@@ -103,36 +125,32 @@ export function TrackerView() {
 					</DialogTrigger>
 					<DialogContent className="border-zinc-800 bg-zinc-950 text-zinc-100 sm:max-w-2xl">
 						<DialogHeader>
-							<DialogTitle>Add tracked job</DialogTitle>
-							<DialogDescription className="text-zinc-400">Create a manual application record.</DialogDescription>
+							<DialogTitle>Import tracked job</DialogTitle>
+							<DialogDescription className="text-zinc-400">
+								Paste a supported job link and Scra.job will scrape the title, company, and salary details.
+							</DialogDescription>
 						</DialogHeader>
-						<div className="grid gap-4 md:grid-cols-2">
-							<Field label="Job Title">
-								<DarkInput value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} />
-							</Field>
-							<Field label="Company">
-								<DarkInput value={draft.company} onChange={(event) => setDraft({ ...draft, company: event.target.value })} />
-							</Field>
-							<Field label="Salary Range">
-								<DarkInput
-									value={draft.salaryRange}
-									onChange={(event) => setDraft({ ...draft, salaryRange: event.target.value })}
-								/>
-							</Field>
-							<Field label="Date Applied">
-								<DarkInput
-									type="date"
-									value={draft.dateApplied}
-									onChange={(event) => setDraft({ ...draft, dateApplied: event.target.value })}
-								/>
-							</Field>
+						<div className="grid gap-4">
 							<Field label="Job URL">
-								<DarkInput value={draft.url} onChange={(event) => setDraft({ ...draft, url: event.target.value })} />
+								<DarkInput
+									placeholder="https://www.ycombinator.com/companies/..."
+									value={draft.url}
+									onChange={(event) => setDraft({ ...draft, url: event.target.value })}
+								/>
 							</Field>
-							<Field label="Status">
-								<StatusSelect value={draft.status} onChange={(status) => setDraft({ ...draft, status })} />
-							</Field>
-							<div className="md:col-span-2">
+							<div className="grid gap-4 md:grid-cols-2">
+								<Field label="Date Applied">
+									<DarkInput
+										type="date"
+										value={draft.dateApplied}
+										onChange={(event) => setDraft({ ...draft, dateApplied: event.target.value })}
+									/>
+								</Field>
+								<Field label="Status">
+									<StatusSelect value={draft.status} onChange={(status) => setDraft({ ...draft, status })} />
+								</Field>
+							</div>
+							<div>
 								<Field label="Notes">
 									<DarkTextarea value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} />
 								</Field>
@@ -146,9 +164,13 @@ export function TrackerView() {
 							>
 								Cancel
 							</Button>
-							<Button onClick={() => void addManualJob()} className="rounded-xl bg-indigo-600 text-white hover:bg-indigo-500">
-								<SaveIcon data-icon="inline-start" />
-								Save Job
+							<Button
+								onClick={() => void importJobFromUrl()}
+								disabled={isImporting}
+								className="rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-70"
+							>
+								{isImporting ? <Loader2Icon data-icon="inline-start" className="animate-spin" /> : <SaveIcon data-icon="inline-start" />}
+								{isImporting ? "Importing..." : "Import Job"}
 							</Button>
 						</DialogFooter>
 					</DialogContent>
