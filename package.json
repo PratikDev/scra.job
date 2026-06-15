@@ -9,8 +9,8 @@
     "dev": "vite dev --port 3000",
     "convex:dev": "bunx convex dev",
     "convex:once": "bunx convex dev --once",
-    "import:sqlite": "bun run scripts/import-sqlite-to-convex.ts",
-    "build": "vite build",
+    "convex:deploy": "bunx convex deploy",
+    "build": "bunx convex deploy --cmd 'vite build'",
     "preview": "vite preview",
     "test": "vitest run",
     "start": "node .output/server/index.mjs"
