@@ -3,7 +3,6 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { action, internalMutation, query } from "./_generated/server";
 import { calculateMatchScore } from "./lib/matchScore";
-import { isRemoteLocation } from "./lib/remoteFilter";
 import { scrapeAllSources } from "./lib/scrapers";
 import type { ScrapedJob, ScrapedJobPayload } from "./lib/types";
 
@@ -56,7 +55,6 @@ export const listScrapedJobs = query({
 		if (rows.length === 0) return [];
 
 		return rows
-			.filter((job) => isRemoteLocation(job.location))
 			.map((job) => serializeScrapedJob(job, profile?.resumeText ?? ""))
 			.sort((jobA, jobB) => {
 				if (jobB.matchScore !== jobA.matchScore) return jobB.matchScore - jobA.matchScore;
