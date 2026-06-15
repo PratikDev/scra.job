@@ -11,11 +11,12 @@ import {
 } from "chart.js";
 import type { ChartOptions, ScriptableContext } from "chart.js";
 import { ActivityIcon, CheckCircle2Icon, SearchIcon, TargetIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Line } from "react-chartjs-2";
+import { useQuery } from "convex/react";
 import { EmptyState } from "@/components/EmptyState";
 import { Panel } from "@/components/Panel";
-import { api } from "@/lib/api";
+import { api as convexApi } from "../../../convex/_generated/api";
 import type { Analytics, ScrapedJob, TrackedJob } from "@/lib/types";
 import { JobCompact } from "./JobCompact";
 import { MetricCard } from "./MetricCard";
@@ -23,32 +24,12 @@ import { MetricCard } from "./MetricCard";
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, ArcElement, Tooltip, Legend, Filler);
 
 export function DashboardView() {
-	const [analytics, setAnalytics] = useState<Analytics | null>(null);
-	const [scrapedJobs, setScrapedJobs] = useState<ScrapedJob[]>([]);
-	const [trackedJobs, setTrackedJobs] = useState<TrackedJob[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState("");
-
-	useEffect(() => {
-		async function loadDashboard() {
-			try {
-				const [jobs, tracked, stats] = await Promise.all([
-					api<ScrapedJob[]>("/api/jobs"),
-					api<TrackedJob[]>("/api/tracked-jobs"),
-					api<Analytics>("/api/analytics"),
-				]);
-				setScrapedJobs(jobs);
-				setTrackedJobs(tracked);
-				setAnalytics(stats);
-			} catch (caught) {
-				setError(caught instanceof Error ? caught.message : "Failed to load dashboard");
-			} finally {
-				setLoading(false);
-			}
-		}
-
-		void loadDashboard();
-	}, []);
+	const loadedJobs = useQuery(convexApi.jobs.listScrapedJobs, {});
+	const loadedTrackedJobs = useQuery(convexApi.trackedJobs.list, {});
+	const analytics = useQuery(convexApi.analytics.get, {}) as Analytics | undefined;
+	const scrapedJobs = (loadedJobs ?? []) as ScrapedJob[];
+	const trackedJobs = (loadedTrackedJobs ?? []) as TrackedJob[];
+	const loading = loadedJobs === undefined || loadedTrackedJobs === undefined || analytics === undefined;
 
 	const pendingJobs = trackedJobs.filter((job) => job.status === "To Apply").length;
 	const topMatches = useMemo(
@@ -95,11 +76,6 @@ export function DashboardView() {
 
 	return (
 		<div className="flex flex-col gap-5">
-			{error ? (
-				<div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-					{error}
-				</div>
-			) : null}
 			<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 				<MetricCard title="Scraped Jobs" value={loading ? "..." : scrapedJobs.length} detail="Public listings indexed" icon={SearchIcon} />
 				<MetricCard title="Tracked" value={analytics?.totalTracked ?? 0} detail="Applications in pipeline" icon={TargetIcon} />

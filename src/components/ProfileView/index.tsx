@@ -1,35 +1,28 @@
+import { useMutation, useQuery } from "convex/react";
 import { SaveIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DarkTextarea } from "@/components/DarkTextarea";
 import { Panel } from "@/components/Panel";
-import { api } from "@/lib/api";
+import { api as convexApi } from "../../../convex/_generated/api";
 
 export function ProfileView() {
+	const profile = useQuery(convexApi.profiles.get, {});
+	const saveProfileMutation = useMutation(convexApi.profiles.save);
 	const [resumeText, setResumeText] = useState("");
 	const [message, setMessage] = useState("Ready");
 	const [error, setError] = useState("");
 
 	useEffect(() => {
-		async function loadProfile() {
-			try {
-				const profile = await api<{ resumeText: string }>("/api/profile");
-				setResumeText(profile.resumeText);
-				setMessage("Profile loaded");
-			} catch (caught) {
-				setError(caught instanceof Error ? caught.message : "Failed to load profile");
-			}
+		if (profile) {
+			setResumeText(profile.resumeText);
+			setMessage("Profile loaded");
 		}
-
-		void loadProfile();
-	}, []);
+	}, [profile]);
 
 	async function saveProfile() {
 		try {
-			await api<{ resumeText: string }>("/api/profile", {
-				method: "PUT",
-				body: JSON.stringify({ resumeText }),
-			});
+			await saveProfileMutation({ resumeText });
 			setMessage("Profile saved");
 		} catch (caught) {
 			setError(caught instanceof Error ? caught.message : "Could not save profile");

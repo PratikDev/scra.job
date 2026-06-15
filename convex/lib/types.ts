@@ -1,9 +1,20 @@
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 
 export const STATUSES = ["To Apply", "Applied", "Interviewing", "Offer", "Rejected"] as const;
 
 export type Status = (typeof STATUSES)[number];
-export type ActiveView = "dashboard" | "scraper" | "tracker" | "profile" | "analytics";
+
+export type ScrapedJobPayload = {
+	source: string;
+	sourceId: string;
+	title: string;
+	company: string;
+	location: string;
+	url: string;
+	description: string;
+	datePosted: number | null;
+	salaryRange: string | null;
+};
 
 export type ScrapedJob = {
 	id: Id<"scrapedJobs">;
@@ -35,14 +46,4 @@ export type Analytics = {
 	interviewConversionRate: number;
 	statusCounts: Record<Status, number>;
 	applicationsOverTime: { date: string; count: number }[];
-};
-
-export type DraftJob = {
-	title: string;
-	company: string;
-	salaryRange: string;
-	url: string;
-	notes: string;
-	dateApplied: string;
-	status: Status;
 };

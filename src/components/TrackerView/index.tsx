@@ -1,5 +1,6 @@
+import { useAction, useMutation, useQuery } from "convex/react";
 import { Loader2Icon, PlusIcon, SaveIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +16,7 @@ import { DarkInput } from "@/components/DarkInput";
 import { DarkTextarea } from "@/components/DarkTextarea";
 import { Field } from "@/components/Field";
 import { StatusSelect } from "@/components/StatusSelect";
-import { api } from "@/lib/api";
+import { api as convexApi } from "../../../convex/_generated/api";
 import { acceptedJobSourceLabel, isAcceptedJobSourceUrl } from "@/lib/acceptedJobSources";
 import { STATUSES, type Status, type TrackedJob } from "@/lib/types";
 import { KanbanCard } from "./KanbanCard";
@@ -37,21 +38,12 @@ const emptyDraft: UrlImportDraft = {
 export function TrackerView() {
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [draft, setDraft] = useState<UrlImportDraft>(emptyDraft);
-	const [trackedJobs, setTrackedJobs] = useState<TrackedJob[]>([]);
 	const [error, setError] = useState("");
 	const [isImporting, setIsImporting] = useState(false);
-
-	useEffect(() => {
-		async function loadTrackedJobs() {
-			try {
-				setTrackedJobs(await api<TrackedJob[]>("/api/tracked-jobs"));
-			} catch (caught) {
-				setError(caught instanceof Error ? caught.message : "Failed to load tracked jobs");
-			}
-		}
-
-		void loadTrackedJobs();
-	}, []);
+	const loadedTrackedJobs = useQuery(convexApi.trackedJobs.list, {});
+	const importFromUrl = useAction(convexApi.trackedJobs.createFromUrl);
+	const updateTrackedJob = useMutation(convexApi.trackedJobs.update);
+	const trackedJobs = (loadedTrackedJobs ?? []) as TrackedJob[];
 
 	async function importJobFromUrl() {
 		if (!draft.url.trim()) {
@@ -68,11 +60,7 @@ export function TrackerView() {
 		try {
 			setError("");
 			setIsImporting(true);
-			const tracked = await api<TrackedJob>("/api/tracked-jobs/from-url", {
-				method: "POST",
-				body: JSON.stringify(draft),
-			});
-			setTrackedJobs((current) => [tracked, ...current]);
+			const tracked = await importFromUrl(draft) as TrackedJob;
 			setDraft(emptyDraft);
 			setDialogOpen(false);
 			toast.success("Job imported to tracker", {
@@ -88,11 +76,7 @@ export function TrackerView() {
 	}
 
 	async function updateStatus(job: TrackedJob, status: Status) {
-		const updated = await api<TrackedJob>(`/api/tracked-jobs/${job.id}`, {
-			method: "PATCH",
-			body: JSON.stringify({ status }),
-		});
-		setTrackedJobs((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+		await updateTrackedJob({ id: job.id, status });
 	}
 
 	const jobsByStatus = useMemo(

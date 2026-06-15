@@ -16,10 +16,9 @@ function cleanText(value = "") {
 export function isRemoteLocation(location = "") {
 	const normalized = cleanText(location).toLowerCase();
 	if (!normalized) return false;
-
 	return REMOTE_LOCATION_PHRASES.some((phrase) => normalized.includes(phrase));
 }
 
-export function onlyRemoteJobs(jobs) {
+export function onlyRemoteJobs<T extends { location: string }>(jobs: T[]) {
 	return jobs.filter((job) => isRemoteLocation(job.location));
 }

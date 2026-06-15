@@ -10,31 +10,19 @@ import {
 	Tooltip,
 } from "chart.js";
 import type { ChartOptions, ScriptableContext } from "chart.js";
+import { useQuery } from "convex/react";
 import { ActivityIcon, CheckCircle2Icon, TargetIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Doughnut, Line } from "react-chartjs-2";
 import { Panel } from "@/components/Panel";
-import { api } from "@/lib/api";
+import { api as convexApi } from "../../../convex/_generated/api";
 import { STATUSES, type Analytics } from "@/lib/types";
 import { MetricCard } from "./MetricCard";
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, ArcElement, Tooltip, Legend, Filler);
 
 export function AnalyticsView() {
-	const [analytics, setAnalytics] = useState<Analytics | null>(null);
-	const [error, setError] = useState("");
-
-	useEffect(() => {
-		async function loadAnalytics() {
-			try {
-				setAnalytics(await api<Analytics>("/api/analytics"));
-			} catch (caught) {
-				setError(caught instanceof Error ? caught.message : "Failed to load analytics");
-			}
-		}
-
-		void loadAnalytics();
-	}, []);
+	const analytics = useQuery(convexApi.analytics.get, {}) as Analytics | undefined;
 
 	const statusChart = useMemo(
 		() => ({
@@ -99,11 +87,6 @@ export function AnalyticsView() {
 
 	return (
 		<div className="flex flex-col gap-5">
-			{error ? (
-				<div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-					{error}
-				</div>
-			) : null}
 			<div className="grid gap-4 md:grid-cols-3">
 				<MetricCard title="Tracked Jobs" value={analytics?.totalTracked ?? 0} detail="Total saved roles" icon={TargetIcon} />
 				<MetricCard title="Applications Sent" value={analytics?.totalApplied ?? 0} detail="Applied or beyond" icon={ActivityIcon} />

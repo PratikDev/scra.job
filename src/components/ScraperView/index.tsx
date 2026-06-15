@@ -1,74 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
-import { ListFilterIcon, RefreshCwIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DarkInput } from "@/components/DarkInput";
+import { api as convexApi } from "@/../convex/_generated/api";
 import { EmptyState } from "@/components/EmptyState";
 import { Panel } from "@/components/Panel";
-import { api } from "@/lib/api";
-import type { JobFilters, ScrapedJob, TrackedJob } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import type { ScrapedJob, TrackedJob } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { RefreshCwIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { JobListItem } from "./JobListItem";
 import { ScrapeSkeleton } from "./ScrapeSkeleton";
 
-const emptyFilters: JobFilters = {
-	title: "",
-	company: "",
-	from: "",
-	to: "",
-};
-
 export function ScraperView() {
-	const [filters, setFilters] = useState<JobFilters>(emptyFilters);
-	const [jobs, setJobs] = useState<ScrapedJob[]>([]);
-	const [loading, setLoading] = useState(true);
 	const [scraping, setScraping] = useState(false);
 	const [message, setMessage] = useState("Ready");
 	const [error, setError] = useState("");
-
-	async function loadJobs(nextFilters = filters) {
-		const params = new URLSearchParams();
-		if (nextFilters.title) params.set("title", nextFilters.title);
-		if (nextFilters.company) params.set("company", nextFilters.company);
-		if (nextFilters.from) params.set("from", nextFilters.from);
-		if (nextFilters.to) params.set("to", nextFilters.to);
-		const query = params.toString();
-		const loadedJobs = await api<ScrapedJob[]>(`/api/jobs${query ? `?${query}` : ""}`);
-		setJobs(loadedJobs);
-	}
+	const loadedJobs = useQuery(convexApi.jobs.listScrapedJobs, {});
+	const scrapeJobs = useAction(convexApi.jobs.scrapeNow);
+	const createFromScraped = useMutation(convexApi.trackedJobs.createFromScraped);
+	const jobs = (loadedJobs ?? []) as ScrapedJob[];
+	const loading = loadedJobs === undefined;
 
 	useEffect(() => {
-		async function loadInitialJobs() {
-			setError("");
-			try {
-				await loadJobs(emptyFilters);
-			} catch (caught) {
-				setError(caught instanceof Error ? caught.message : "Failed to load jobs");
-			} finally {
-				setLoading(false);
-			}
-		}
-
-		void loadInitialJobs();
-	}, []);
-
-	async function applyFilters() {
-		setError("");
-		try {
-			await loadJobs();
-		} catch (caught) {
-			setError(caught instanceof Error ? caught.message : "Failed to filter jobs");
-		}
-	}
+		if (!loading) setMessage("Ready");
+	}, [loading]);
 
 	async function scrapeNow() {
 		setScraping(true);
 		setError("");
 		try {
-			const result = await api<{ inserted: number; updated: number; errors: { source: string; message: string }[] }>(
-				"/api/scrape",
-				{ method: "POST" }
-			);
-			await loadJobs();
+			const result = await scrapeJobs();
 			setMessage(
 				`Scrape complete: ${result.inserted} new, ${result.updated} updated${
 					result.errors.length ? `, ${result.errors.length} source issue(s)` : ""
@@ -83,7 +43,7 @@ export function ScraperView() {
 
 	async function quickSave(job: ScrapedJob) {
 		try {
-			await api<TrackedJob>(`/api/tracked-jobs/from-scraped/${job.id}`, { method: "POST" });
+			await createFromScraped({ id: job.id }) as TrackedJob;
 			setMessage(`Saved ${job.title} to To Apply`);
 		} catch (caught) {
 			setError(caught instanceof Error ? caught.message : "Could not track job");
@@ -109,36 +69,6 @@ export function ScraperView() {
 					>
 						<RefreshCwIcon data-icon="inline-start" className={cn(scraping && "animate-spin")} />
 						Scrape Now
-					</Button>
-				</div>
-				<div className="grid gap-3 md:grid-cols-[1fr_1fr_10rem_10rem_auto]">
-					<DarkInput
-						placeholder="Job title"
-						value={filters.title}
-						onChange={(event) => setFilters({ ...filters, title: event.target.value })}
-					/>
-					<DarkInput
-						placeholder="Company"
-						value={filters.company}
-						onChange={(event) => setFilters({ ...filters, company: event.target.value })}
-					/>
-					<DarkInput
-						type="date"
-						value={filters.from}
-						onChange={(event) => setFilters({ ...filters, from: event.target.value })}
-					/>
-					<DarkInput
-						type="date"
-						value={filters.to}
-						onChange={(event) => setFilters({ ...filters, to: event.target.value })}
-					/>
-					<Button
-						variant="outline"
-						onClick={() => void applyFilters()}
-						className="rounded-xl border-zinc-800 bg-zinc-950 text-zinc-200 transition-all duration-200 hover:bg-zinc-900 hover:text-white"
-					>
-						<ListFilterIcon data-icon="inline-start" />
-						Filter
 					</Button>
 				</div>
 			</Panel>

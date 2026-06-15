@@ -2,16 +2,19 @@
 
 ## Project Structure & Module Organization
 
-This is a TanStack Start/Vite React app with a separate Express API. `src/routes/` contains file-based routes; `__root.tsx` defines the document shell and `index.tsx` holds the main dashboard. Shared React components live in `src/components/`, with shadcn/ui primitives in `src/components/ui/`. Client utilities live in `src/lib/`. The Node API, SQLite/Sequelize models, scrapers, and match scoring logic live in `server/`. Static browser assets are in `public/`; runtime SQLite data is created under `data/`. Do not manually edit generated `src/routeTree.gen.ts`.
+This is a TanStack Start/Vite React app backed by Convex. `src/routes/` contains file-based routes; `__root.tsx` defines the document shell and Convex provider; `index.tsx` redirects to the dashboard. Shared React components live in `src/components/`, with shadcn/ui primitives in `src/components/ui/`. Client utilities live in `src/lib/`. Convex schema, functions, scrapers, and match scoring logic live in `convex/`. Static browser assets are in `public/`; legacy runtime SQLite data may exist under `data/` for one-time imports. Do not manually edit generated `src/routeTree.gen.ts`.
 
 ## Build, Test, and Development Commands
 
 Use Bun for local development.
 
 - `bun install`: install dependencies from `bun.lock`.
-- `bun dev`: start the API and Vite web app together.
+- `bun dev`: start Convex dev and the Vite web app together.
 - `bun run dev:web`: start only the frontend on port `3000`.
-- `bun run dev:api`: start only the API, defaulting to port `4000`.
+- `bun run convex:dev`: start only Convex dev.
+- `bun run convex:once`: run one Convex dev/codegen pass.
+- `bun run import:sqlite -- --dry-run`: inspect legacy SQLite import counts.
+- `bun run import:sqlite`: import `data/scrajob.sqlite` into Convex.
 - `bun build`: create the production build.
 - `bun preview`: preview the built frontend locally.
 - `bun test`: run Vitest.
@@ -23,7 +26,7 @@ Write TypeScript and TSX with strict compiler settings. Use the `@/*` path alias
 
 ## Testing Guidelines
 
-Vitest is configured, but no test files are present yet. Add tests beside covered code using `*.test.ts` or `*.test.tsx`. Use Testing Library for React behavior and plain Vitest assertions for server utilities such as match scoring. Run `bun test` before submitting changes; run `bunx tsc --noEmit` for TypeScript changes.
+Vitest is configured. Add tests beside covered code using `*.test.ts` or `*.test.tsx`. Use Testing Library for React behavior and plain Vitest assertions for Convex utility modules such as match scoring. Run `bun test` before submitting changes; run `bunx tsc --noEmit` for TypeScript changes.
 
 ## Commit & Pull Request Guidelines
 
@@ -31,7 +34,7 @@ Keep commits atomic: commit only the files you touched and list each path explic
 
 ## Security & Configuration Tips
 
-The frontend reads `VITE_API_ORIGIN`, defaulting to `http://localhost:4000`. The API reads `API_PORT`, defaulting to `4000`. Do not commit local database contents, secrets, or scraped personal data. Keep network scraper changes conservative and handle source failures without breaking the whole scrape.
+The frontend reads `VITE_CONVEX_URL`, which is written by Convex dev after project configuration. Do not commit local database contents, secrets, or scraped personal data. Keep network scraper changes conservative and handle source failures without breaking the whole scrape.
 
 <!-- convex-ai-start -->
 

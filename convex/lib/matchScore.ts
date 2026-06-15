@@ -28,18 +28,14 @@ export function tokenize(text = "") {
 		.filter((word) => word.length > 2 && !STOP_WORDS.has(word));
 }
 
-export function calculateMatchScore(profileText, jobText) {
+export function calculateMatchScore(profileText: string, jobText: string) {
 	const profileTokens = new Set(tokenize(profileText));
-	if (profileTokens.size === 0) {
-		return 0;
-	}
+	if (profileTokens.size === 0) return 0;
 
 	const jobTokens = new Set(tokenize(jobText));
 	let matches = 0;
 	for (const token of profileTokens) {
-		if (jobTokens.has(token)) {
-			matches += 1;
-		}
+		if (jobTokens.has(token)) matches += 1;
 	}
 
 	return Math.min(100, Math.round((matches / profileTokens.size) * 100));
