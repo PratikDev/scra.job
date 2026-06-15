@@ -1,5 +1,6 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { onlyRemoteJobs } from "./remoteFilter.js";
 
 const http = axios.create({
 	timeout: 15000,
@@ -55,7 +56,7 @@ export async function scrapeWeWorkRemotely() {
 	});
 	const $ = cheerio.load(data, { xmlMode: true });
 
-	return $("item")
+	const jobs = $("item")
 		.toArray()
 		.slice(0, 40)
 		.map((item) => {
@@ -78,13 +79,15 @@ export async function scrapeWeWorkRemotely() {
 			};
 		})
 		.filter((job) => job.title && job.url);
+
+	return onlyRemoteJobs(jobs);
 }
 
 export async function scrapeRemoteOk() {
 	const { data } = await http.get("https://remoteok.com/api");
 	const rows = Array.isArray(data) ? data.slice(1, 51) : [];
 
-	return rows
+	const jobs = rows
 		.map((job) => ({
 			source: "RemoteOK",
 			sourceId: String(job.id ?? job.url ?? job.slug),
@@ -100,6 +103,8 @@ export async function scrapeRemoteOk() {
 					: null,
 		}))
 		.filter((job) => job.sourceId && job.title && job.url);
+
+	return onlyRemoteJobs(jobs);
 }
 
 export async function scrapeHackerNewsJobs() {
@@ -109,7 +114,7 @@ export async function scrapeHackerNewsJobs() {
 		topIds.map((id) => http.get(`https://hacker-news.firebaseio.com/v0/item/${id}.json`))
 	);
 
-	return responses
+	const jobs = responses
 		.filter((result) => result.status === "fulfilled" && result.value.data)
 		.map((result) => {
 			const item = result.value.data;
@@ -127,6 +132,8 @@ export async function scrapeHackerNewsJobs() {
 			};
 		})
 		.filter((job) => job.title && job.url);
+
+	return onlyRemoteJobs(jobs);
 }
 
 export async function scrapeAllSources() {

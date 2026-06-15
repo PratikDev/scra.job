@@ -4,6 +4,7 @@ import express from "express";
 import { Op } from "sequelize";
 import { Profile, ScrapedJob, TrackedJob, initDatabase } from "./database.js";
 import { calculateMatchScore } from "./matchScore.js";
+import { REMOTE_LOCATION_PHRASES } from "./remoteFilter.js";
 import { scrapeAllSources } from "./scrapers.js";
 
 fs.mkdirSync("data", { recursive: true });
@@ -43,6 +44,9 @@ app.get("/api/jobs", async (request, response, next) => {
 			if (from) where.datePosted[Op.gte] = new Date(String(from));
 			if (to) where.datePosted[Op.lte] = new Date(String(to));
 		}
+		where[Op.or] = REMOTE_LOCATION_PHRASES.map((phrase) => ({
+			location: { [Op.like]: `%${phrase}%` },
+		}));
 
 		const [profile, jobs] = await Promise.all([
 			Profile.findByPk(1),
