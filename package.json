@@ -7,8 +7,8 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
-    "convex:dev": "bunx convex dev",
-    "convex:once": "bunx convex dev --once",
+    "convex": "bunx convex dev --once",
+    "convex:watch": "bunx convex dev",
     "convex:deploy": "bunx convex deploy",
     "build": "bunx convex deploy --cmd 'vite build'",
     "preview": "vite preview",

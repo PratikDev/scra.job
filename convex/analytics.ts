@@ -1,10 +1,11 @@
 import { query } from "./_generated/server";
-import { STATUSES, type Analytics, type Status } from "./lib/types";
+import { APPLIED_TRACKED_JOB_STATUSES, INTERVIEW_TRACKED_JOB_STATUSES, TRACKED_JOB_STATUSES } from "./schema";
+import type { Analytics, Status } from "./lib/types";
 
 export const get = query({
 	args: {},
 	handler: async (ctx): Promise<Analytics> => {
-		const statusCounts = Object.fromEntries(STATUSES.map((status) => [status, 0])) as Record<Status, number>;
+		const statusCounts = Object.fromEntries(TRACKED_JOB_STATUSES.map((status) => [status, 0])) as Record<Status, number>;
 		const applicationsByDate: Record<string, number> = {};
 		let totalTracked = 0;
 		let appliedOrBeyond = 0;
@@ -13,8 +14,8 @@ export const get = query({
 		for await (const job of ctx.db.query("trackedJobs")) {
 			totalTracked += 1;
 			statusCounts[job.status] = (statusCounts[job.status] || 0) + 1;
-			if (job.status !== "To Apply") appliedOrBeyond += 1;
-			if (["Interviewing", "Offer"].includes(job.status)) interviewingOrBeyond += 1;
+			if ((APPLIED_TRACKED_JOB_STATUSES as readonly Status[]).includes(job.status)) appliedOrBeyond += 1;
+			if ((INTERVIEW_TRACKED_JOB_STATUSES as readonly Status[]).includes(job.status)) interviewingOrBeyond += 1;
 			if (job.dateApplied) applicationsByDate[job.dateApplied] = (applicationsByDate[job.dateApplied] || 0) + 1;
 		}
 

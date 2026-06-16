@@ -17,6 +17,7 @@ import { useQuery } from "convex/react";
 import { EmptyState } from "@/components/EmptyState";
 import { Panel } from "@/components/Panel";
 import { api as convexApi } from "../../../convex/_generated/api";
+import { DEFAULT_TRACKED_JOB_STATUS } from "../../../convex/schema";
 import type { Analytics, ScrapedJob, TrackedJob } from "@/lib/types";
 import { JobCompact } from "./JobCompact";
 import { MetricCard } from "./MetricCard";
@@ -31,7 +32,7 @@ export function DashboardView() {
 	const trackedJobs = (loadedTrackedJobs ?? []) as TrackedJob[];
 	const loading = loadedJobs === undefined || loadedTrackedJobs === undefined || analytics === undefined;
 
-	const pendingJobs = trackedJobs.filter((job) => job.status === "To Apply").length;
+	const pendingJobs = trackedJobs.filter((job) => job.status === DEFAULT_TRACKED_JOB_STATUS).length;
 	const topMatches = useMemo(
 		() => [...scrapedJobs].sort((jobA, jobB) => jobB.matchScore - jobA.matchScore).slice(0, 4),
 		[scrapedJobs]
@@ -79,7 +80,7 @@ export function DashboardView() {
 			<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 				<MetricCard title="Scraped Jobs" value={loading ? "..." : scrapedJobs.length} detail="Public listings indexed" icon={SearchIcon} />
 				<MetricCard title="Tracked" value={analytics?.totalTracked ?? 0} detail="Applications in pipeline" icon={TargetIcon} />
-				<MetricCard title="To Apply" value={pendingJobs} detail="Open action queue" icon={ActivityIcon} />
+				<MetricCard title={DEFAULT_TRACKED_JOB_STATUS} value={pendingJobs} detail="Open action queue" icon={ActivityIcon} />
 				<MetricCard
 					title="Interview Rate"
 					value={`${analytics?.interviewConversionRate ?? 0}%`}

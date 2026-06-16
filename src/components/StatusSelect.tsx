@@ -1,5 +1,6 @@
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { STATUSES, type Status } from "@/lib/types";
+import { TRACKED_JOB_STATUSES } from "../../convex/schema";
+import type { Status } from "@/lib/types";
 
 export function StatusSelect({ value, onChange }: { value: Status; onChange: (status: Status) => void }) {
 	return (
@@ -9,7 +10,7 @@ export function StatusSelect({ value, onChange }: { value: Status; onChange: (st
 			</SelectTrigger>
 			<SelectContent className="border-zinc-800 bg-zinc-950 text-zinc-100">
 				<SelectGroup>
-					{STATUSES.map((status) => (
+					{TRACKED_JOB_STATUSES.map((status) => (
 						<SelectItem key={status} value={status} className="focus:bg-zinc-900 focus:text-zinc-100">
 							{status}
 						</SelectItem>

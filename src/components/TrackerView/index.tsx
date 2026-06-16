@@ -17,8 +17,9 @@ import { DarkTextarea } from "@/components/DarkTextarea";
 import { Field } from "@/components/Field";
 import { StatusSelect } from "@/components/StatusSelect";
 import { api as convexApi } from "../../../convex/_generated/api";
+import { DEFAULT_TRACKED_JOB_STATUS, TRACKED_JOB_STATUSES } from "../../../convex/schema";
 import { acceptedJobSourceLabel, isAcceptedJobSourceUrl } from "@/lib/acceptedJobSources";
-import { STATUSES, type Status, type TrackedJob } from "@/lib/types";
+import type { Status, TrackedJob } from "@/lib/types";
 import { KanbanCard } from "./KanbanCard";
 
 type UrlImportDraft = {
@@ -32,7 +33,7 @@ const emptyDraft: UrlImportDraft = {
 	url: "",
 	notes: "",
 	dateApplied: "",
-	status: "To Apply",
+	status: DEFAULT_TRACKED_JOB_STATUS,
 };
 
 export function TrackerView() {
@@ -81,7 +82,7 @@ export function TrackerView() {
 
 	const jobsByStatus = useMemo(
 		() =>
-			STATUSES.reduce<Record<Status, TrackedJob[]>>(
+			TRACKED_JOB_STATUSES.reduce<Record<Status, TrackedJob[]>>(
 				(groups, status) => ({ ...groups, [status]: trackedJobs.filter((job) => job.status === status) }),
 				{} as Record<Status, TrackedJob[]>
 			),
@@ -160,8 +161,8 @@ export function TrackerView() {
 					</DialogContent>
 				</Dialog>
 			</div>
-			<div className="grid gap-4 xl:grid-cols-5">
-				{STATUSES.map((status) => (
+			<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+				{TRACKED_JOB_STATUSES.map((status) => (
 					<section key={status} className="flex min-h-96 flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/45 p-3">
 						<div className="flex items-center justify-between gap-2 px-1">
 							<h3 className="text-sm font-semibold text-zinc-200">{status}</h3>

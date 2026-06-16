@@ -1,8 +1,7 @@
 import type { Id } from "../_generated/dataModel";
+import type { TRACKED_JOB_STATUSES } from "../schema";
 
-export const STATUSES = ["To Apply", "Applied", "Interviewing", "Offer", "Rejected"] as const;
-
-export type Status = (typeof STATUSES)[number];
+export type Status = (typeof TRACKED_JOB_STATUSES)[number];
 
 export type ScrapedJobPayload = {
 	source: string;

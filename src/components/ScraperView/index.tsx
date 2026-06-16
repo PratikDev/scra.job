@@ -1,4 +1,5 @@
 import { api as convexApi } from "@/../convex/_generated/api";
+import { DEFAULT_TRACKED_JOB_STATUS } from "@/../convex/schema";
 import { EmptyState } from "@/components/EmptyState";
 import { Panel } from "@/components/Panel";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ export function ScraperView() {
 	async function quickSave(job: ScrapedJob) {
 		try {
 			await createFromScraped({ id: job.id }) as TrackedJob;
-			setMessage(`Saved ${job.title} to To Apply`);
+			setMessage(`Saved ${job.title} to ${DEFAULT_TRACKED_JOB_STATUS}`);
 		} catch (caught) {
 			setError(caught instanceof Error ? caught.message : "Could not track job");
 		}

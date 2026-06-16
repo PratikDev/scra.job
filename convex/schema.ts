@@ -1,12 +1,19 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+export const TRACKED_JOB_STATUSES = ["To Apply", "Qualifying", "Applied", "Interviewing", "Offer", "Rejected"] as const;
+const [toApplyStatus, qualifyingStatus, appliedStatus, interviewingStatus, offerStatus, rejectedStatus] = TRACKED_JOB_STATUSES;
+export const DEFAULT_TRACKED_JOB_STATUS = toApplyStatus;
+export const APPLIED_TRACKED_JOB_STATUSES = [appliedStatus, interviewingStatus, offerStatus, rejectedStatus] as const;
+export const INTERVIEW_TRACKED_JOB_STATUSES = [interviewingStatus, offerStatus] as const;
+
 export const statusValidator = v.union(
-	v.literal("To Apply"),
-	v.literal("Applied"),
-	v.literal("Interviewing"),
-	v.literal("Offer"),
-	v.literal("Rejected")
+	v.literal(toApplyStatus),
+	v.literal(qualifyingStatus),
+	v.literal(appliedStatus),
+	v.literal(interviewingStatus),
+	v.literal(offerStatus),
+	v.literal(rejectedStatus)
 );
 
 export default defineSchema({

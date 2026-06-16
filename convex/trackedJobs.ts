@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { action, internalMutation, mutation, query } from "./_generated/server";
-import { statusValidator } from "./schema";
+import { DEFAULT_TRACKED_JOB_STATUS, statusValidator } from "./schema";
 import { ACCEPTED_JOB_SOURCE_HOSTS, isAcceptedJobSourceUrl } from "./lib/acceptedJobSources";
 import { scrapeJobFromUrl } from "./lib/scrapers";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -51,7 +51,7 @@ export const create = mutation({
 			url: args.url,
 			notes: args.notes ?? null,
 			dateApplied: args.dateApplied ?? null,
-			status: args.status ?? "To Apply",
+			status: args.status ?? DEFAULT_TRACKED_JOB_STATUS,
 			sourceJobId: args.sourceJobId ?? null,
 			updatedAt: Date.now(),
 		});
@@ -76,7 +76,7 @@ export const createFromScraped = mutation({
 			url: scrapedJob.url,
 			notes: `Saved from ${scrapedJob.source}`,
 			dateApplied: null,
-			status: "To Apply",
+			status: DEFAULT_TRACKED_JOB_STATUS,
 			sourceJobId: scrapedJob._id,
 			updatedAt: Date.now(),
 		});
@@ -212,7 +212,7 @@ export const createFromUrl = action({
 			url: args.url,
 			notes: args.notes || `Imported from ${extractedJob.source}`,
 			dateApplied: args.dateApplied ?? null,
-			status: args.status ?? "To Apply",
+			status: args.status ?? DEFAULT_TRACKED_JOB_STATUS,
 			sourceJobId: existingScrapedJob?._id ?? null,
 		});
 		return trackedJob;

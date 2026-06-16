@@ -16,7 +16,8 @@ import { useMemo } from "react";
 import { Doughnut, Line } from "react-chartjs-2";
 import { Panel } from "@/components/Panel";
 import { api as convexApi } from "../../../convex/_generated/api";
-import { STATUSES, type Analytics } from "@/lib/types";
+import { TRACKED_JOB_STATUSES } from "../../../convex/schema";
+import type { Analytics } from "@/lib/types";
 import { MetricCard } from "./MetricCard";
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, ArcElement, Tooltip, Legend, Filler);
@@ -26,11 +27,11 @@ export function AnalyticsView() {
 
 	const statusChart = useMemo(
 		() => ({
-			labels: [...STATUSES],
+			labels: [...TRACKED_JOB_STATUSES],
 			datasets: [
 				{
-					data: STATUSES.map((status) => analytics?.statusCounts[status] ?? 0),
-					backgroundColor: ["#4f46e5", "#6366f1", "#8b5cf6", "#22c55e", "#ef4444"],
+					data: TRACKED_JOB_STATUSES.map((status) => analytics?.statusCounts[status] ?? 0),
+					backgroundColor: ["#4f46e5", "#6366f1", "#8b5cf6", "#06b6d4", "#22c55e", "#ef4444"],
 					borderColor: "#18181b",
 					borderWidth: 2,
 					hoverOffset: 6,
